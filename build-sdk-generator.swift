@@ -38,4 +38,5 @@ if !fileManager.fileExists(atPath: generatorDirectory.path) {
 // Pull and rebuild the generator in release mode
 print("Checking for SDK generator updates and rebuilding...")
 try run("git", ["pull", "origin"], in: generatorDirectory)
-try run("swift", ["build", "-c", "release"], in: generatorDirectory)
+print("NOTE: Using --static-swift-stdlib so it is easy to switch host Swift versions without rebuilding the generator.")
+try run("swift", ["build", "-c", "release", "--static-swift-stdlib"], in: generatorDirectory)
