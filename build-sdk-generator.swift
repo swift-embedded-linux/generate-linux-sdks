@@ -1,5 +1,7 @@
 #!/usr/bin/env swift
 import Foundation
+import Glibc
+import Synchronization
 
 enum ScriptError: Error, CustomStringConvertible {
     case commandFailed(String, Int32)
@@ -17,8 +19,34 @@ func run(_ executable: String, _ arguments: [String], in directory: URL? = nil) 
     process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
     process.arguments = [executable] + arguments
     process.currentDirectoryURL = directory
+
+    let interruptedBySIGINT = Atomic<Bool>(false)
+    let interruptSource = DispatchSource.makeSignalSource(
+        signal: SIGINT,
+        queue: DispatchQueue.global()
+    )
+    interruptSource.setEventHandler {
+        if process.isRunning {
+            _ = interruptedBySIGINT.exchange(true, ordering: .relaxed)
+            process.interrupt()
+        }
+    }
+    signal(SIGINT, SIG_IGN)
+    interruptSource.resume()
+    defer {
+        interruptSource.cancel()
+        signal(SIGINT, SIG_DFL)
+    }
+
     try process.run()
     process.waitUntilExit()
+
+    // Print special message that we got interrupted
+    let wasInterrupted = interruptedBySIGINT.load(ordering: .relaxed)
+    if wasInterrupted {
+        print("\nProcess was interrupted by SIGINT, exiting now...")
+        return
+    }
 
     guard process.terminationStatus == 0 else {
         throw ScriptError.commandFailed(([executable] + arguments).joined(separator: " "), process.terminationStatus)
