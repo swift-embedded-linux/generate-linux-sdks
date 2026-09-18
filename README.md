@@ -25,14 +25,31 @@ Follow these steps in order.
 
    You should see a Swift 6.0+ release, such as 6.0, 6.1, 6.3, or 6.4.
 
-2. Clone this repository and enter it
+   NOTE: This is best used with [swiftly](https://github.com/swiftlang/swiftly), which can be installed from [Swift.org](https://www.swift.org/install/linux/). With swiftly it is then easy to switch Swift versions before generating and testing Swift SDKs that require those versions of Swift.
+
+2. Ensure that needed dependencies are installed
+
+   Debian/Ubuntu:
+
+   ```bash
+   sudo apt install zstd xz-utils libsqlite3-dev
+   ```
+
+   macOS:
+
+   ```bash
+   cd swift-sdk-generator
+   brew bundle install
+   ```
+
+3. Clone this repository and enter it
 
    ```bash
    git clone https://github.com/swift-embedded-linux/generate-linux-sdks.git
    cd generate-linux-sdks
    ```
 
-3. Build the SDK generator
+4. Build the SDK generator
 
    This script checks out or updates the upstream generator project, then builds it in release mode with a static Swift standard library.
 
@@ -44,7 +61,7 @@ Follow these steps in order.
 
    - `swift-sdk-generator/.build/release/swift-sdk-generator`
 
-4. Generate Swift SDK bundles
+5. Generate Swift SDK bundles
 
    The main script generates Linux Swift SDK bundles for multiple target architectures.
 
@@ -62,7 +79,7 @@ Follow these steps in order.
    - `6.4.0` = Swift version to target
    - `ubuntu` = Linux distribution name
    - `noble` = distribution version
-   - `--test` = optional; validates the result using the local test harness
+   - `--test` = optional; validates the result using the local test project
 
    If you only want to generate the bundles without testing, omit the final option:
 
@@ -70,7 +87,7 @@ Follow these steps in order.
    ./generate-linux-sdks.swift 6.4.0 ubuntu noble
    ```
 
-5. Check the generated bundles
+6. Check the generated bundles
 
    Generated artifact bundles appear under the generator’s `Bundles` directory:
 
@@ -86,7 +103,7 @@ Follow these steps in order.
    6.4.0-RELEASE_ubuntu_noble_x86_64.artifactbundle
    ```
 
-6. Clean up generated bundles when needed
+7. (Optional): Clean up generated bundles when needed
 
    ```bash
    ./clean-linux-sdks.swift
