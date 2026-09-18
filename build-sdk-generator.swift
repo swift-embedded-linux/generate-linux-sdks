@@ -60,7 +60,7 @@ let generatorDirectory = workingDirectory.appendingPathComponent("swift-sdk-gene
 // Clone the generator if needed
 if !fileManager.fileExists(atPath: generatorDirectory.path) {
     print("Cloning SDK generator...")
-    try run("git", ["clone", "https://github.com/swiftlang/swift-sdk-generator.git"])
+    try run("git", ["clone", "https://github.com/swift-embedded-linux/swift-sdk-generator.git"])
 }
 
 // Pull and rebuild the generator in release mode
