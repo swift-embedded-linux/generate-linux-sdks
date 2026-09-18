@@ -1,5 +1,4 @@
 #!/usr/bin/env swift
-
 import Foundation
 
 enum ScriptError: Error, CustomStringConvertible {
@@ -7,7 +6,7 @@ enum ScriptError: Error, CustomStringConvertible {
 
     var description: String {
         switch self {
-        case let .commandFailed(command, status):
+        case .commandFailed(let command, let status):
             return "Command failed with exit status \(status): \(command)"
         }
     }

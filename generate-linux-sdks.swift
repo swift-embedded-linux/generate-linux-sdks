@@ -1,5 +1,4 @@
 #!/usr/bin/env swift
-
 import Foundation
 
 struct ScriptError: Error, CustomStringConvertible {
@@ -38,7 +37,8 @@ func generateSDK(
     fileManager: FileManager
 ) throws {
     let sdkName = "\(swiftVersion)-RELEASE_\(distributionName)_\(distributionVersion)_\(targetArchitecture)"
-    let bundleURL = workingDirectory
+    let bundleURL =
+        workingDirectory
         .appendingPathComponent("Bundles", isDirectory: true)
         .appendingPathComponent("\(sdkName).artifactbundle", isDirectory: true)
 
@@ -61,11 +61,13 @@ func generateSDK(
 
     if targetArchitecture == "armv7" {
         let downloadFilename = "swift-\(swiftVersion)-RELEASE-\(distributionName)-\(distributionVersion)-armv7-install"
-        let downloadPath = workingDirectory
+        let downloadPath =
+            workingDirectory
             .appendingPathComponent("Artifacts", isDirectory: true)
             .appendingPathComponent(downloadFilename, isDirectory: true)
         let archivePath = URL(fileURLWithPath: "\(downloadPath.path).tar.gz")
-        let downloadURL = "https://github.com/swift-embedded-linux/armhf-debian/releases/download/\(swiftVersion)/\(downloadFilename).tar.gz"
+        let downloadURL =
+            "https://github.com/swift-embedded-linux/armhf-debian/releases/download/\(swiftVersion)/\(downloadFilename).tar.gz"
 
         print("Downloading & extracting armv7 runtime...")
         try run("wget", ["-nc", "-nv", downloadURL, "-O", archivePath.path])
@@ -87,7 +89,7 @@ let fileManager = FileManager.default
 let rootDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
 let generatorDirectory = rootDirectory.appendingPathComponent("swift-sdk-generator", isDirectory: true)
 
- do {
+do {
     let arguments = Array(CommandLine.arguments.dropFirst())
     let swiftVersion = try requiredArgument(at: 0, named: "Swift version. E.g. 6.4.0", in: arguments)
     let distributionName = try requiredArgument(at: 1, named: "distribution name. E.g. ubuntu", in: arguments)

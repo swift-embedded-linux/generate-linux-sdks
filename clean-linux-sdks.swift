@@ -1,10 +1,10 @@
 #!/usr/bin/env swift
-
 import Foundation
 
 let fileManager = FileManager.default
 let workingDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
-let bundlesDirectory = workingDirectory
+let bundlesDirectory =
+    workingDirectory
     .appendingPathComponent("swift-sdk-generator", isDirectory: true)
     .appendingPathComponent("Bundles", isDirectory: true)
 
