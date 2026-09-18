@@ -49,9 +49,51 @@ func run(_ executable: String, _ arguments: [String], in directory: URL? = nil) 
     }
 }
 
+func normalizeSwiftVersion(_ version: String) -> String {
+    if version == "6.4" {
+        return "6.4.0"
+    }
+    return version
+}
+
+func hostSwiftVersion() throws -> String {
+    let process = Process()
+    let outputPipe = Pipe()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+    process.arguments = ["swift", "--version"]
+    process.standardOutput = outputPipe
+
+    try process.run()
+    process.waitUntilExit()
+
+    guard process.terminationStatus == 0 else {
+        throw ScriptError(message: "Unable to determine the host Swift version.")
+    }
+
+    let output = String(decoding: outputPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    guard
+        let version =
+            output
+            .split(whereSeparator: \.isWhitespace)
+            .drop(while: { $0 != "version" })
+            .dropFirst()
+            .first
+    else {
+        throw ScriptError(message: "Unable to parse the host Swift version from `swift --version`.")
+    }
+    return normalizeSwiftVersion(String(version))
+}
+
 func requiredArgument(at index: Int, named name: String, in arguments: [String]) throws -> String {
     guard arguments.indices.contains(index), !arguments[index].isEmpty else {
         throw ScriptError(message: "You must provide a \(name).")
+    }
+    return arguments[index]
+}
+
+func optionalArgument(at index: Int, named name: String, in arguments: [String]) -> String? {
+    guard arguments.indices.contains(index), !arguments[index].isEmpty else {
+        return nil
     }
     return arguments[index]
 }
@@ -70,14 +112,14 @@ func generateSDK(
         .appendingPathComponent("Bundles", isDirectory: true)
         .appendingPathComponent("\(sdkName).artifactbundle", isDirectory: true)
 
+    print()
+    print("==================================================================================")
+    print("Generating Swift SDK \(sdkName)...")
+
     if fileManager.fileExists(atPath: bundleURL.path) {
         print("Swift SDK \(sdkName) already exists. Skipping generation.")
         return
     }
-
-    print()
-    print("==================================================================================")
-    print("Generating Swift SDK \(sdkName)...")
 
     var generatorArguments = [
         "make-linux-sdk",
@@ -98,7 +140,7 @@ func generateSDK(
             "https://github.com/swift-embedded-linux/armhf-debian/releases/download/\(swiftVersion)/\(downloadFilename).tar.gz"
 
         print("Downloading & extracting armv7 runtime...")
-        try run("wget", ["-nc", "-nv", downloadURL, "-O", archivePath.path])
+        try run("wget", ["-nc", "-nv", "-o", "/dev/null", downloadURL, "-O", archivePath.path])
         if fileManager.fileExists(atPath: downloadPath.path) {
             try fileManager.removeItem(at: downloadPath)
         }
@@ -113,15 +155,57 @@ func generateSDK(
     try run("./.build/release/swift-sdk-generator", generatorArguments, in: workingDirectory)
 }
 
+func testSDK(
+    targetArchitecture: String,
+    swiftVersion: String,
+    distributionName: String,
+    distributionVersion: String,
+    bundlesDirectory: URL,
+    workingDirectory: URL,
+    fileManager: FileManager
+) throws {
+    let sdkName = "\(swiftVersion)-RELEASE_\(distributionName)_\(distributionVersion)_\(targetArchitecture)"
+
+    print()
+    print("==================================================================================")
+    print("Testing Swift SDK \(sdkName)...")
+
+    let buildArguments = [
+        "--swift-sdks-path", bundlesDirectory.path,
+        "--swift-sdk", sdkName
+    ]
+
+    // 6.4 defaults to swiftbuild, which generates a different test runner than previous versions
+    // which default to the native build system. We should not try to use swiftbuild with <6.4 as
+    // it does not work correctly with Swift SDKs
+    var testRunnerPath = workingDirectory.appendingPathComponent(".build/debug/test_projectPackageTests.xctest")
+    if swiftVersion.hasPrefix("6.4") {
+        testRunnerPath = workingDirectory.appendingPathComponent(".build/debug/test_projectTests-test-runner")
+    }
+
+    // Develop build + tests
+    try run("swift", ["build", "-c", "debug", "--build-tests"] + buildArguments, in: workingDirectory)
+    try run("file", [workingDirectory.appendingPathComponent(".build/debug/test_project").path], in: workingDirectory)
+    try run(
+        "file", [testRunnerPath.path],
+        in: workingDirectory)
+
+    // Release build
+    try run("swift", ["build", "-c", "release"] + buildArguments, in: workingDirectory)
+    try run("file", [workingDirectory.appendingPathComponent(".build/release/test_project").path], in: workingDirectory)
+}
+
 let fileManager = FileManager.default
 let rootDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
 let generatorDirectory = rootDirectory.appendingPathComponent("swift-sdk-generator", isDirectory: true)
 
 do {
     let arguments = Array(CommandLine.arguments.dropFirst())
-    let swiftVersion = try requiredArgument(at: 0, named: "Swift version. E.g. 6.4.0", in: arguments)
+    var swiftVersion = try requiredArgument(at: 0, named: "Swift version. E.g. 6.4.0", in: arguments)
+    swiftVersion = normalizeSwiftVersion(swiftVersion)
     let distributionName = try requiredArgument(at: 1, named: "distribution name. E.g. ubuntu", in: arguments)
     let distributionVersion = try requiredArgument(at: 2, named: "distribution version. E.g. noble", in: arguments)
+    let option = optionalArgument(at: 3, named: "--install or --test", in: arguments)
 
     guard fileManager.fileExists(atPath: generatorDirectory.path) else {
         throw ScriptError(message: "swift-sdk-generator not found. Please run build-sdk-generator.swift first.")
@@ -136,6 +220,48 @@ do {
             workingDirectory: generatorDirectory,
             fileManager: fileManager
         )
+
+        switch option {
+        case "--install":
+            // TODO: Install support
+            break
+        case "--test":
+            let bundlesDirectory = generatorDirectory.appendingPathComponent("Bundles", isDirectory: true)
+            let testProjectDirectory = rootDirectory.appendingPathComponent("test-project", isDirectory: true)
+
+            let actualSwiftVersion = try hostSwiftVersion()
+            guard actualSwiftVersion == swiftVersion else {
+                throw ScriptError(
+                    message:
+                        "Host Swift version is \(actualSwiftVersion), but Swift \(swiftVersion) was requested for testing."
+                )
+            }
+
+            guard fileManager.fileExists(atPath: bundlesDirectory.path) else {
+                throw ScriptError(
+                    message:
+                        "swift-sdk-generator Bundles directory not found. Please run generate-swift-sdks.swift first.")
+            }
+
+            guard fileManager.fileExists(atPath: testProjectDirectory.path) else {
+                throw ScriptError(
+                    message:
+                        "test-project directory not found. This should be available at the root of the source tree for testing the Swift SDKs."
+                )
+            }
+
+            try testSDK(
+                targetArchitecture: targetArchitecture,
+                swiftVersion: swiftVersion,
+                distributionName: distributionName,
+                distributionVersion: distributionVersion,
+                bundlesDirectory: bundlesDirectory,
+                workingDirectory: testProjectDirectory,
+                fileManager: fileManager
+            )
+        default:  // ignore other options
+            break
+        }
     }
 } catch {
     fputs("Error: \(error)\n", stderr)
