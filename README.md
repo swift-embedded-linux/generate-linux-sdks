@@ -6,10 +6,9 @@ Important:
 
 - These scripts require Swift 6.0 or later.
 - They currently support generating and testing Swift 6.0 or later Swift SDKs only.
-- The supported workflow is to build the generator in `swift-sdk-generator`, then use the helper scripts in this repo to generate bundle artifacts under `swift-sdk-generator/Bundles`.
 - These scripts only support generating Swift SDKs for **Debian** and **Ubuntu** distributions since armv7 support is required.
-   - Raspberry Pi OS is not supported since the SDK generator does not support it yet.
 - Docker is not required for generating these Swift SDKs as only the package-based builds are used with the SDK generator.
+  - Raspberry Pi OS is not supported since the SDK generator does not support it (yet).
 
 ## Getting started
 
@@ -29,17 +28,24 @@ Follow these steps in order.
 
 2. Ensure that needed dependencies are installed
 
+   These are required for building and running the SDK generator.
+
    Debian/Ubuntu:
 
    ```bash
-   sudo apt install zstd xz-utils libsqlite3-dev
+   sudo apt install libsqlite3-dev zstd xz-utils
+   ```
+
+   RHEL/Fedora:
+
+   ```bash
+   sudo dnf install zstd xz
    ```
 
    macOS:
 
    ```bash
-   cd swift-sdk-generator
-   brew bundle install
+   brew install xz zstd
    ```
 
 3. Clone this repository and enter it
