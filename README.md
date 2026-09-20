@@ -137,11 +137,17 @@ This script keeps the underlying `swift-sdk-generator` project up to date and re
   swift build -c release --static-swift-stdlib
   ```
 
-#### Usage
+#### Syntax
 
 ```bash
-./build-sdk-generator.swift
+./build-sdk-generator.swift <branch>
 ```
+
+#### Parameters
+
+- `branch`: optional branch name to checkout, pull, and build.
+  - If not specified, the default branch from the repo will be used.
+  - If a branch was previously checked out, excluding this parameter will then continue using that branch.
 
 #### Notes
 

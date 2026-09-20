@@ -53,14 +53,31 @@ func run(_ executable: String, _ arguments: [String], in directory: URL? = nil) 
     }
 }
 
+func optionalArgument(at index: Int, named name: String, in arguments: [String]) -> String? {
+    guard arguments.indices.contains(index), !arguments[index].isEmpty else {
+        return nil
+    }
+    return arguments[index]
+}
+
 let fileManager = FileManager.default
 let workingDirectory = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
 let generatorDirectory = workingDirectory.appendingPathComponent("swift-sdk-generator", isDirectory: true)
+
+
+let arguments = Array(CommandLine.arguments.dropFirst())
+let branch = optionalArgument(at: 0, named: "optional branch name to checkout/build", in: arguments)
 
 // Clone the generator if needed
 if !fileManager.fileExists(atPath: generatorDirectory.path) {
     print("Cloning SDK generator...")
     try run("git", ["clone", "https://github.com/swift-embedded-linux/swift-sdk-generator.git"])
+}
+
+if let branch {
+    print("Checking out & pulling branch \(branch)...")
+    try run("git", ["checkout", branch], in: generatorDirectory)
+    try run("git", ["pull", "origin", branch], in: generatorDirectory)
 }
 
 // Pull and rebuild the generator in release mode
