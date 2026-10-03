@@ -90,6 +90,6 @@ try run("git", ["pull", "origin"], in: generatorDirectory)
 var buildParams = ["build", "-c", "release"]
 #if os(Linux)
 print("NOTE: Using --static-swift-stdlib so it is easy to switch host Swift versions without rebuilding the generator.")
-buildParams.append(["--static-swift-stdlib", "-Xswiftc", "-static-stdlib"])
+buildParams.append(contentsOf: ["--static-swift-stdlib", "-Xswiftc", "-static-stdlib"])
 #endif
 try run("swift", buildParams, in: generatorDirectory)
