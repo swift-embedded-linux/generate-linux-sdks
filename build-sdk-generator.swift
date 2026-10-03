@@ -1,6 +1,10 @@
 #!/usr/bin/env swift
 import Foundation
+#if os(Linux)
 import Glibc
+#elseif os(macOS)
+import Darwin
+#endif
 import Synchronization
 
 enum ScriptError: Error, CustomStringConvertible {
