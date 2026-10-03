@@ -1,6 +1,10 @@
 #!/usr/bin/env swift
 import Foundation
+#if os(Linux)
 import Glibc
+#elseif os(macOS)
+import Darwin
+#endif
 import Synchronization
 
 struct ScriptError: Error, CustomStringConvertible {
@@ -140,7 +144,7 @@ func generateSDK(
             "https://github.com/swift-embedded-linux/armhf-debian/releases/download/\(swiftVersion)/\(downloadFilename).tar.gz"
 
         print("Downloading & extracting armv7 runtime...")
-        try run("wget", ["-nc", "-nv", "-o", "/dev/null", downloadURL, "-O", archivePath.path])
+        try run("curl", ["--fail", "--location", "--silent", "--show-error", "--output", archivePath.path, downloadURL])
         if fileManager.fileExists(atPath: downloadPath.path) {
             try fileManager.removeItem(at: downloadPath)
         }
