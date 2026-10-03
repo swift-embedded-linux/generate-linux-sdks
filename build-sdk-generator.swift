@@ -87,5 +87,9 @@ if let branch {
 // Pull and rebuild the generator in release mode
 print("Checking for SDK generator updates and rebuilding...")
 try run("git", ["pull", "origin"], in: generatorDirectory)
+var buildParams = ["build", "-c", "release"]
+#if os(Linux)
 print("NOTE: Using --static-swift-stdlib so it is easy to switch host Swift versions without rebuilding the generator.")
-try run("swift", ["build", "-c", "release", "--static-swift-stdlib", "-Xswiftc", "-static-stdlib"], in: generatorDirectory)
+buildParams.append(["--static-swift-stdlib", "-Xswiftc", "-static-stdlib"])
+#endif
+try run("swift", buildParams, in: generatorDirectory)
