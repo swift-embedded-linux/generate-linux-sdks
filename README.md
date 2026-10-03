@@ -33,7 +33,7 @@ Follow these steps in order.
    Debian/Ubuntu:
 
    ```bash
-   sudo apt install libsqlite3-dev zstd xz-utils
+   sudo apt install libsqlite3-dev zstd xz-utils curl
    ```
 
    RHEL/Fedora:
